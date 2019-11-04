@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -45,6 +46,10 @@ ADC_HandleTypeDef hadc1;
 
 CAN_HandleTypeDef hcan;
 
+osThreadId_t defaultTaskHandle;
+osThreadId_t CANHandle;
+osThreadId_t LEDStripsHandle;
+osThreadId_t DMSHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -54,6 +59,11 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_CAN_Init(void);
+void StartDefaultTask(void *argument);
+void StartCAN(void *argument);
+void StartLEDStrips(void *argument);
+void StartDMS(void *argument);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -97,6 +107,66 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
+
+  osKernelInitialize();
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* definition and creation of defaultTask */
+  const osThreadAttr_t defaultTask_attributes = {
+    .name = "defaultTask",
+    .priority = (osPriority_t) osPriorityNormal,
+    .stack_size = 128
+  };
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* definition and creation of CAN */
+  const osThreadAttr_t CAN_attributes = {
+    .name = "CAN",
+    .priority = (osPriority_t) osPriorityAboveNormal,
+    .stack_size = 128
+  };
+  CANHandle = osThreadNew(StartCAN, NULL, &CAN_attributes);
+
+  /* definition and creation of LEDStrips */
+  const osThreadAttr_t LEDStrips_attributes = {
+    .name = "LEDStrips",
+    .priority = (osPriority_t) osPriorityNormal,
+    .stack_size = 128
+  };
+  LEDStripsHandle = osThreadNew(StartLEDStrips, NULL, &LEDStrips_attributes);
+
+  /* definition and creation of DMS */
+  const osThreadAttr_t DMS_attributes = {
+    .name = "DMS",
+    .priority = (osPriority_t) osPriorityLow,
+    .stack_size = 128
+  };
+  DMSHandle = osThreadNew(StartDMS, NULL, &DMS_attributes);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* Start scheduler */
+  osKernelStart();
+  
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -251,6 +321,99 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used 
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void *argument)
+{
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END 5 */ 
+}
+
+/* USER CODE BEGIN Header_StartCAN */
+/**
+* @brief Function implementing the CAN thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartCAN */
+void StartCAN(void *argument)
+{
+  /* USER CODE BEGIN StartCAN */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartCAN */
+}
+
+/* USER CODE BEGIN Header_StartLEDStrips */
+/**
+* @brief Function implementing the LEDStrips thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartLEDStrips */
+void StartLEDStrips(void *argument)
+{
+  /* USER CODE BEGIN StartLEDStrips */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartLEDStrips */
+}
+
+/* USER CODE BEGIN Header_StartDMS */
+/**
+* @brief Function implementing the DMS thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartDMS */
+void StartDMS(void *argument)
+{
+  /* USER CODE BEGIN StartDMS */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartDMS */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

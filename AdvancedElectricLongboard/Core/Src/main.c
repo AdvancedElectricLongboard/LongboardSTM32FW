@@ -22,6 +22,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "CAN.h"
+#include "stdbool.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -320,10 +321,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
-{
-	HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &RxMessage, RxData);
-}
 
 /* USER CODE END 4 */
 
@@ -357,11 +354,12 @@ void StartCAN(void *argument)
   /* USER CODE BEGIN StartCAN */
   /* Infinite loop */
 	HAL_CAN_Start(&hcan);
+	CAN_INIT(&hcan);
 	HAL_CAN_ActivateNotification(&hcan,CAN_IT_RX_FIFO0_MSG_PENDING);
   for(;;)
   {
 	  //HAL_CAN_RxFifo0MsgPendingCallback()
-	HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &RxMessage, RxData);
+	HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &RxHeader, RxData);
     osDelay(1);
   }
   /* USER CODE END StartCAN */

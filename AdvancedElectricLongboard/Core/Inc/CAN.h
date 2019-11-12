@@ -30,6 +30,7 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
 #include "stdbool.h"
+#include "buffer.h"
 
 
 #define CAN_ID 1
@@ -65,7 +66,8 @@ typedef enum {
 	CAN_PACKET_CONF_STORE_FOC_ERPMS,
 	CAN_PACKET_STATUS_5,
 	CAN_PACKET_SET_BATTERY_VOLTAGE,
-	CAN_PACKET_SET_THROTTLE
+	CAN_PACKET_SET_THROTTLE,
+	CAN_PACKET_SET_REVERSE
 } CAN_PACKET_ID;
 
 CAN_FilterTypeDef CanFilterConfig;
@@ -78,7 +80,7 @@ static const uint32_t FAKE_RPM = 8000; //[1]
 static const uint16_t FAKE_CURRENT = 10000; //mA
 static const uint16_t FAKE_DUTY = 50; //%
 
-void CAN_INIT()
+void CAN_INIT(CAN_HandleTypeDef *hcan)
 {
 	CanFilterConfig.FilterBank= 0;
 	CanFilterConfig.FilterMode= CAN_FILTERMODE_IDMASK;
@@ -91,7 +93,7 @@ void CAN_INIT()
 	CanFilterConfig.FilterActivation= ENABLE;
 	CanFilterConfig.SlaveStartFilterBank = 14;
 
-	HAL_CAN_ConfigFilter(&hcan, &CanFilterConfig);
+	HAL_CAN_ConfigFilter(hcan, &CanFilterConfig);
 
 	TxHeader.StdId= 0;
 	TxHeader.ExtId = CAN_ID;
@@ -101,9 +103,9 @@ void CAN_INIT()
 	TxHeader.TransmitGlobalTime = DISABLE;
 }
 
-int32_t CAN_SEND_STATUS()
+int32_t CAN_SEND_STATUS(CAN_HandleTypeDef *hcan)
 {
-	if(HAL_CAN_GetTxMailboxesFreeLevel(&hcan) == 0)
+	if(HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0)
 		return 0;
 
 	TxHeader.ExtId &= ((TxHeader.ExtId&0xFF)|(CAN_PACKET_STATUS<<8));
@@ -113,16 +115,16 @@ int32_t CAN_SEND_STATUS()
 	buffer_append_int16(TxData,FAKE_CURRENT,&send_index);
 	buffer_append_int16(TxData,FAKE_CURRENT,&send_index);
 
-	if(HAL_CAN_AddTxMessage(&hcan,&TxHeader,TxData,&TxMailbox) != HAL_OK)
+	if(HAL_CAN_AddTxMessage(hcan,&TxHeader,TxData,&TxMailbox) != HAL_OK)
 	{
 		Error_Handler();
 	}
 	return 1;
 }
 
-int32_t CAN_SEND_BRAKE_CURRENT(float bcurrent)	//in Ampere
+int32_t CAN_SEND_BRAKE_CURRENT(CAN_HandleTypeDef *hcan,float bcurrent)	//in Ampere
 {
-	if(HAL_CAN_GetTxMailboxesFreeLevel(&hcan) == 0)
+	if(HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0)
 		return 0;
 
 	TxHeader.ExtId &= ((TxHeader.ExtId&0xFF)|(CAN_PACKET_SET_CURRENT_BRAKE<<8));
@@ -130,33 +132,36 @@ int32_t CAN_SEND_BRAKE_CURRENT(float bcurrent)	//in Ampere
 	int32_t send_index = 0;
 	buffer_append_int32(TxData,(int32_t)(bcurrent * 1000),&send_index);
 
-	if(HAL_CAN_AddTxMessage(&hcan,&TxHeader,TxData,&TxMailbox) != HAL_OK)
+	if(HAL_CAN_AddTxMessage(hcan,&TxHeader,TxData,&TxMailbox) != HAL_OK)
 	{
 		Error_Handler();
 	}
 	return 1;
 }
 
-bool CAN_RECEIVED_PACKAGE()	//in Ampere
+bool CAN_RECEIVED_PACKAGE(CAN_HandleTypeDef *hcan)	//in Ampere
 {
-	if(HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
+	if(HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
 	{
 		uint8_t cmd = ((RxHeader.ExtId&0xFF00)>>8);
 
 		switch(cmd)
-		case CAN_PACKET_SET_CURRENT_BRAKE:
-			break;
+		{
+			case CAN_PACKET_SET_CURRENT_BRAKE:
+				break;
 
-		case CAN_PACKET_SET_BATTERY_VOLTAGE:
-			break;
+			case CAN_PACKET_SET_BATTERY_VOLTAGE:
+				break;
 
-		case CAN_PACKET_SET_THROTTLE:
-			break;
+			case CAN_PACKET_SET_THROTTLE:
+				break;
 
-		case CAN_PACKET_SET_REVERSE:
-			break;
+			case CAN_PACKET_SET_REVERSE:
+				break;
+		}
+		return true;
 	}
-
+	return false;
 }
 
 

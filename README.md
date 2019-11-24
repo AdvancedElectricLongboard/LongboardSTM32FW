@@ -8,8 +8,10 @@ File->Import->General->Existing Projects into Workspace -> "Select Path to Repo 
 **Install Openocd Debugger in Eclipse**  
 Help -> Install New Software -> "Work with: http://gnu-mcu-eclipse.netlify.com/v4-neon-updates" -> Select Cross Development Tools -> Next-> Next
 
-**Change Path to OpenOcd**  
+**Configure Openocd Debugger**  
 Run -> Debug Configurations -> Openocd Debug -> Debugger -> "Set Path to Repo"  
+
+Config options: -f interface/stlink.cfg -f board/stm32f103c8_blue_pill.cfg -c "reset_config trst_only combined"
 
 **Git-Bash**  
 https://git-scm.com/downloads

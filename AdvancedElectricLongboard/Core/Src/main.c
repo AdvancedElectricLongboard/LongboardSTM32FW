@@ -288,7 +288,7 @@ static void MX_CAN_Init(void)
   hcan.Init.Prescaler = 16;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan.Init.TimeSeg1 = CAN_BS1_1TQ;
+  hcan.Init.TimeSeg1 = CAN_BS1_2TQ;
   hcan.Init.TimeSeg2 = CAN_BS2_1TQ;
   hcan.Init.TimeTriggeredMode = DISABLE;
   hcan.Init.AutoBusOff = DISABLE;
@@ -359,7 +359,9 @@ void StartCAN(void *argument)
   for(;;)
   {
 	  //HAL_CAN_RxFifo0MsgPendingCallback()
-	HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &RxHeader, RxData);
+//	CAN_SEND_STATUS(&hcan);
+	CAN_RECEIVED_PACKAGE(&hcan);
+//	HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &RxHeader, RxData);
     osDelay(1);
   }
   /* USER CODE END StartCAN */

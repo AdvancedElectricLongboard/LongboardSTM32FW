@@ -359,7 +359,7 @@ void StartCAN(void *argument)
   for(;;)
   {
 	  //HAL_CAN_RxFifo0MsgPendingCallback()
-//	CAN_SEND_STATUS(&hcan);
+	CAN_SEND_STATUS(&hcan);
 	CAN_RECEIVED_PACKAGE(&hcan);
 //	HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &RxHeader, RxData);
     osDelay(1);

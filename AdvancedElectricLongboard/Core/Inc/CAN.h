@@ -32,7 +32,6 @@ extern "C" {
 #include "stdbool.h"
 #include "buffer.h"
 
-
 #define CAN_ID 2
 
 // CAN commands
@@ -78,121 +77,25 @@ CAN_RxHeaderTypeDef RxHeader;
 uint8_t               TxData[8];
 uint8_t               RxData[8];
 uint32_t              TxMailbox;
-static const uint32_t FAKE_RPM = 0xAABBCCDD;//8000; //[1]
-static const uint16_t FAKE_CURRENT = 10000; //mA
-static const uint16_t FAKE_DUTY = 100; //%
 uint8_t id;
-bool reverse;
 
-void CAN_INIT(CAN_HandleTypeDef *hcan)
-{
-	CanFilterConfig.FilterBank= 0;
-	CanFilterConfig.FilterMode= CAN_FILTERMODE_IDMASK;
-	CanFilterConfig.FilterScale= CAN_FILTERSCALE_32BIT;
-	CanFilterConfig.FilterIdHigh= 0x0000;
-	CanFilterConfig.FilterIdLow= 0x0000;
-	CanFilterConfig.FilterMaskIdHigh= 0x0000;
-	CanFilterConfig.FilterMaskIdLow= 0x0000;
-	CanFilterConfig.FilterFIFOAssignment= CAN_RX_FIFO0;
-	CanFilterConfig.FilterActivation= ENABLE;
-	CanFilterConfig.SlaveStartFilterBank = 14;
+void CAN_INIT(CAN_HandleTypeDef *hcan);
 
-	HAL_CAN_ConfigFilter(hcan, &CanFilterConfig);
+uint32_t getBatteryVoltage(); //mV
 
-	TxHeader.StdId= 0;	//1
-	TxHeader.ExtId = 0;	//1
-	TxHeader.RTR= CAN_RTR_DATA;
-	TxHeader.IDE= 0;	//4
-	TxHeader.DLC= 8;
-	TxHeader.TransmitGlobalTime = DISABLE;
-}
+bool getReverse();
 
-void setCanDestinationIDE(uint32_t ide)
-{
-	TxHeader.IDE = ide;
-}
+int32_t getThrottle();
 
-void setCanDestinationEID(uint32_t eid)
-{
-	TxHeader.ExtId = eid;
-}
+int32_t getBrakeCurrent();
 
-int32_t CAN_SEND_STATUS(CAN_HandleTypeDef *hcan)
-{
-	if(HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0)
-		return 0;
+int32_t getBrakeCurrentRel();
 
-	TxHeader.ExtId = ((TxHeader.ExtId&0xFF)|((CAN_PACKET_STATUS)<<8));
-	TxHeader.StdId = ((TxHeader.StdId&0xFF)|((CAN_PACKET_STATUS)<<8));
+int32_t CAN_SEND_STATUS(CAN_HandleTypeDef *hcan);
 
-	int32_t send_index = 0;
-	for(size_t i = 0; i < 8;i++)
-		TxData[i] = 0x00;
-	buffer_append_int32(TxData,FAKE_RPM,&send_index);
-	buffer_append_int16(TxData,FAKE_CURRENT,&send_index);
-	buffer_append_int16(TxData,FAKE_DUTY,&send_index);
+int32_t CAN_SEND_BRAKE_CURRENT(CAN_HandleTypeDef *hcan,float bcurrent); //A
 
-	if(HAL_CAN_AddTxMessage(hcan,&TxHeader,TxData,&TxMailbox) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	return 1;
-}
-
-int32_t CAN_SEND_BRAKE_CURRENT(CAN_HandleTypeDef *hcan,float bcurrent)	//in Ampere
-{
-	if(HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0)
-		return 0;
-
-	TxHeader.ExtId &= ((TxHeader.ExtId&0xFF)|(CAN_PACKET_SET_CURRENT_BRAKE<<8));
-
-	int32_t send_index = 0;
-	buffer_append_int32(TxData,(int32_t)(bcurrent * 1000),&send_index);
-
-	if(HAL_CAN_AddTxMessage(hcan,&TxHeader,TxData,&TxMailbox) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	return 1;
-}
-
-bool CAN_RECEIVED_PACKAGE(CAN_HandleTypeDef *hcan)	//in Ampere
-{
-	status = HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData);
-
-	setCanDestinationIDE(RxHeader.IDE);
-	setCanDestinationEID((RxHeader.ExtId&&0xFF00)>>8);
-
-	if(status == HAL_OK)
-	{
-		uint8_t cmd = ((RxHeader.ExtId&0xFF00)>>8);
-
-		switch(cmd)
-		{
-			case CAN_PACKET_SET_CURRENT_BRAKE:
-				break;
-
-			case CAN_PACKET_SET_BATTERY_VOLTAGE:
-				break;
-
-			case CAN_PACKET_SET_THROTTLE:
-				break;
-
-			case CAN_PACKET_SET_REVERSE:
-				if(RxData[1]&0x01)
-					reverse = true;
-				else
-					reverse = false;
-				break;
-			case CAN_PACKET_STATUS_5:
-				id = (RxData[7]<<8) | (RxData[6]);
-				break;
-		}
-		return true;
-	}
-
-	return false;
-}
+bool CAN_RECEIVED_PACKAGE(CAN_HandleTypeDef *hcan);
 
 
 #ifdef __cplusplus

@@ -27,6 +27,8 @@
 #include "CAN.h"
 #include "stdbool.h"
 
+#include "DMS.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,6 +47,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc2;
 
 CAN_HandleTypeDef hcan;
 
@@ -52,6 +55,7 @@ osThreadId_t defaultTaskHandle;
 osThreadId_t CANHandle;
 osThreadId_t LEDStripsHandle;
 osThreadId_t DMSHandle;
+osThreadId_t BatteryOverLoadHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -61,10 +65,12 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_CAN_Init(void);
+static void MX_ADC2_Init(void);
 void StartDefaultTask(void *argument);
 void StartCAN(void *argument);
 void StartLEDStrips(void *argument);
 void StartDMS(void *argument);
+void StartBatteryOverLoadProtection(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -106,6 +112,7 @@ int main(void)
   MX_GPIO_Init();
   MX_ADC1_Init();
   MX_CAN_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -160,6 +167,14 @@ int main(void)
     .stack_size = 128
   };
   DMSHandle = osThreadNew(StartDMS, NULL, &DMS_attributes);
+
+  /* definition and creation of BatteryOverLoad */
+  const osThreadAttr_t BatteryOverLoad_attributes = {
+    .name = "BatteryOverLoad",
+    .priority = (osPriority_t) osPriorityLow,
+    .stack_size = 128
+  };
+  BatteryOverLoadHandle = osThreadNew(StartBatteryOverLoadProtection, NULL, &BatteryOverLoad_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -245,7 +260,7 @@ static void MX_ADC1_Init(void)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
@@ -256,7 +271,7 @@ static void MX_ADC1_Init(void)
   }
   /** Configure Regular Channel 
   */
-  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -266,6 +281,51 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
+  * @brief ADC2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC2_Init(void)
+{
+
+  /* USER CODE BEGIN ADC2_Init 0 */
+
+  /* USER CODE END ADC2_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC2_Init 1 */
+
+  /* USER CODE END ADC2_Init 1 */
+  /** Common config 
+  */
+  hadc2.Instance = ADC2;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc2.Init.ContinuousConvMode = ENABLE;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.NbrOfConversion = 1;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure Regular Channel 
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC2_Init 2 */
+
+  /* USER CODE END ADC2_Init 2 */
 
 }
 
@@ -288,7 +348,7 @@ static void MX_CAN_Init(void)
   hcan.Init.Prescaler = 16;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan.Init.TimeSeg1 = CAN_BS1_2TQ;
+  hcan.Init.TimeSeg1 = CAN_BS1_1TQ;
   hcan.Init.TimeSeg2 = CAN_BS2_1TQ;
   hcan.Init.TimeTriggeredMode = DISABLE;
   hcan.Init.AutoBusOff = DISABLE;
@@ -313,10 +373,21 @@ static void MX_CAN_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PB8 PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 
@@ -395,12 +466,91 @@ void StartLEDStrips(void *argument)
 void StartDMS(void *argument)
 {
   /* USER CODE BEGIN StartDMS */
+	HAL_ADC_Start(&hadc1);
+	HAL_ADC_Start(&hadc2);
+	bool DMS1_Step=false;
+	bool DMS2_Step=false;
+	bool DMS1_Alert=false;
+	bool DMS2_Alert=false;
+	uint32_t DMS1_timer=0;
+	uint32_t DMS2_timer=0;
+	bool DMS_Break = false;
+	float BrakeCurrent=0;
   /* Infinite loop */
+
   for(;;)
   {
+	volatile uint32_t DMS1_Val = ADC_Poll2(&hadc1)&0xfff; //get DMS Voltage
+	volatile uint32_t DMS2_Val = ADC_Poll2(&hadc2)&0xfff;
+
+	DMS1_Step=Check_Threshhold(DMS1_Val); //Check Value
+	DMS2_Step=Check_Threshhold(DMS2_Val);
+
+
+
+	if(DMS1_Step==true){ //person on board
+		DMS1_timer=HAL_GetTick(); //get current timer value
+		DMS1_Alert=false;
+	}
+	else{//no person on board
+		uint32_t delta_time=HAL_GetTick();
+		if(DMS1_timer+1000<delta_time){
+			DMS1_Alert=true;
+		}
+	}
+
+	if(DMS2_Step==true){ //person on board
+			DMS2_timer=HAL_GetTick(); //get current timer value
+			DMS2_Alert=false;
+		}
+		else{//no person on board
+			uint32_t delta_time=HAL_GetTick();
+			if(DMS2_timer+1000<delta_time){
+				DMS2_Alert=true;
+			}
+		}
+	if(DMS1_Alert&DMS2_Alert==true){
+		//DMS_Break=true;
+		BrakeCurrent=(float)getBrakeCurrentRel()/1000;
+		CAN_SEND_BRAKE_CURRENT(&hcan,BrakeCurrent);
+	}
+	else{
+		//DMS_Break=false;
+	}
     osDelay(1);
   }
   /* USER CODE END StartDMS */
+}
+
+/* USER CODE BEGIN Header_StartBatteryOverLoadProtection */
+/**
+* @brief Function implementing the BatteryOverLoad thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartBatteryOverLoadProtection */
+void StartBatteryOverLoadProtection(void *argument)
+{
+  /* USER CODE BEGIN StartBatteryOverLoadProtection */
+	int Current=0;
+	int Voltage=0;
+  /* Infinite loop */
+  for(;;)
+  {
+	  Current=getBrakeCurrent();
+	  Voltage=getBatteryVoltage();
+	  if(Current>0&&Voltage>40800){
+		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_SET);
+	  }
+	  else{
+		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_RESET);
+	  }
+
+    osDelay(1);
+  }
+  /* USER CODE END StartBatteryOverLoadProtection */
 }
 
 /**

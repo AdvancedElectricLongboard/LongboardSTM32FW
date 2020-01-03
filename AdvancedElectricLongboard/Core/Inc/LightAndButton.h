@@ -17,19 +17,22 @@
 #define Button_Pin GPIO_PIN_4
 // Lights output pins port A
 #define Lights_Pins_PORTA (GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10)
+
 //Lights output pins port B
 #define Lights_Pins_PORTB GPIO_PIN_15
 
 
+
 GPIO_InitTypeDef  InitStruct_Button;
-GPIO_InitTypeDef  InitStruct_Lights_PortA;
-GPIO_InitTypeDef  InitStruct_Lights_PortB;
 
 static bool direction;
 
 
 void Button_Init(void);
 void Lights_Init(void);
+void CheckLightDirection(void);
+void TurnOffLights(void);
+void TurnOnLights(void);
 
 
 

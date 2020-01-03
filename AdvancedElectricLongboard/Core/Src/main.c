@@ -25,6 +25,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "CAN.h"
+#include "visEffect.h"
+#include "ws2812b.h"
+#include "LightAndButton.h"
 #include "stdbool.h"
 
 /* USER CODE END Includes */
@@ -53,7 +56,8 @@ osThreadId_t CANHandle;
 osThreadId_t LEDStripsHandle;
 osThreadId_t DMSHandle;
 /* USER CODE BEGIN PV */
-
+int32_t testthrottle = 100;
+uint32_t testbat=4200;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -99,7 +103,11 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  ///////////////////////////////////////////////////////////////////////////////////
+  	visInit();
+  	Lights_Init();
+  	Button_Init();
+  ///////////////////////////////////////////////////////////////////////////////////
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -148,8 +156,8 @@ int main(void)
   /* definition and creation of LEDStrips */
   const osThreadAttr_t LEDStrips_attributes = {
     .name = "LEDStrips",
-    .priority = (osPriority_t) osPriorityNormal,
-    .stack_size = 128
+    .priority = (osPriority_t) osPriorityHigh,
+    .stack_size = 512
   };
   LEDStripsHandle = osThreadNew(StartLEDStrips, NULL, &LEDStrips_attributes);
 
@@ -322,6 +330,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -378,9 +387,66 @@ void StartLEDStrips(void *argument)
 {
   /* USER CODE BEGIN StartLEDStrips */
   /* Infinite loop */
+
+//init ledButton
+  bool ledButtonFlag, PressFlag = 0;
+  static uint8_t visMode = 0; 				//visMode = 0-4 defines the active animation
+  static uint8_t visMaxBirghtness = 255;	//defines the max brightness of the animation
+  static uint16_t buttonCnt,TimCnt,testCNT = 0;			//counts the time the button is being pressed
   for(;;)
   {
-    osDelay(1);
+	ledButtonFlag = HAL_GPIO_ReadPin(GPIOA, Button_Pin);
+	visHandle(visMode, visMaxBirghtness);
+    osDelay(10);
+    if(ledButtonFlag == 1 && HAL_GPIO_ReadPin(GPIOA, Button_Pin) == 1)
+    {
+    	buttonCnt++;
+    	ledButtonFlag = 0;
+    }
+    if(ledButtonFlag == 1 && !HAL_GPIO_ReadPin(GPIOA, Button_Pin))
+    {
+    	if(buttonCnt > 5 && buttonCnt < 100)
+    	{
+    			if(visMode == 4) visMode = 0;
+    			else visMode++;
+    	}
+    	ledButtonFlag = 0;		//reset ledButtonFlag at falling edge
+    	buttonCnt = 0;
+    }
+    if(buttonCnt >= 100)
+    {
+    	uint8_t i;
+    	for(i=0;i<7;i++)
+    	{
+    		if(buttonCnt >= (i+1)*100 && buttonCnt < (i+2)*100)
+			{
+    			visMaxBirghtness = 255-(i*51);
+    			break;
+			}
+    		if(buttonCnt==700)
+    		{
+    			buttonCnt = 0;
+    			break;
+    		}
+    	}
+    }
+    if(testCNT==20)
+    {
+    	if(testbat <=2700) testbat=4200;
+    	else testbat-=10;
+    	if(testthrottle<=-100) testthrottle=100;
+    	else    	testthrottle--;
+    	testCNT=0;
+    }
+    testCNT++;
+//	if(buttonCnt > 100 && buttonCnt < 200) visMaxBirghtness = 255;
+//	if(buttonCnt > 200 && buttonCnt < 300) visMaxBirghtness = 204;
+//	if(buttonCnt > 300 && buttonCnt < 400) visMaxBirghtness = 153;
+//	if(buttonCnt > 400 && buttonCnt < 500) visMaxBirghtness = 102;
+//	if(buttonCnt > 500 && buttonCnt < 600) visMaxBirghtness = 51;
+//	if(buttonCnt > 600 && buttonCnt < 700) visMaxBirghtness = 0;
+//	if(buttonCnt == 700) buttonCnt = 0;
+
   }
   /* USER CODE END StartLEDStrips */
 }
@@ -411,18 +477,38 @@ void StartDMS(void *argument)
   * @param  htim : TIM handle
   * @retval None
   */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM1) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
-
-  /* USER CODE END Callback 1 */
-}
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//{
+//  /* USER CODE BEGIN Callback 0 */
+/////////////////////////////////////////////////////////////////////////////////////
+//  if(htim->Instance == TIM2)
+//  {
+//	  if (ws2812b.timerPeriodCounter < (uint8_t)WS2812_RESET_PERIOD)
+//	  	{
+//	  		// count the number of timer periods
+//	  		ws2812b.timerPeriodCounter++;
+//	  	}
+//	  	else
+//	  	{
+//	  		ws2812b.timerPeriodCounter = 0;
+//	  		__HAL_TIM_DISABLE(&Tim2Handle);
+//	  		TIM2->CR1 = 0; // disable timer
+//
+//	  		// disable the TIM2 Update
+//	  		__HAL_TIM_DISABLE_IT(&Tim2Handle, TIM_IT_UPDATE);
+//	  		// set TransferComplete flag
+//	  		ws2812b.transferComplete = 1;
+//	  	}
+//  }
+/////////////////////////////////////////////////////////////////////////////////////
+//  /* USER CODE END Callback 0 */
+//  if (htim->Instance == TIM1) {
+//    HAL_IncTick();
+//  }
+//  /* USER CODE BEGIN Callback 1 */
+//
+//  /* USER CODE END Callback 1 */
+//}
 
 /**
   * @brief  This function is executed in case of error occurrence.

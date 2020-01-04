@@ -342,6 +342,8 @@ static void MX_ADC2_Init(void)
   * @param None
   * @retval None
   */
+
+/* USER CODE BEGIN MX_CAN_Init */
 static void MX_CAN_Init(void)
 {
 
@@ -356,7 +358,7 @@ static void MX_CAN_Init(void)
   hcan.Init.Prescaler = 16;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan.Init.TimeSeg1 = CAN_BS1_1TQ;
+  hcan.Init.TimeSeg1 = CAN_BS1_2TQ;
   hcan.Init.TimeSeg2 = CAN_BS2_1TQ;
   hcan.Init.TimeTriggeredMode = DISABLE;
   hcan.Init.AutoBusOff = DISABLE;
@@ -373,6 +375,8 @@ static void MX_CAN_Init(void)
   /* USER CODE END CAN_Init 2 */
 
 }
+
+/* USER CODE END MX_CAN_Init */
 
 /**
   * @brief GPIO Initialization Function
@@ -435,11 +439,17 @@ void StartCAN(void *argument)
   /* Infinite loop */
 	HAL_CAN_Start(&hcan);
 	CAN_INIT(&hcan);
+	uint32_t StartTick = HAL_GetTick();
 	HAL_CAN_ActivateNotification(&hcan,CAN_IT_RX_FIFO0_MSG_PENDING);
   for(;;)
   {
 	  //HAL_CAN_RxFifo0MsgPendingCallback()
-	CAN_SEND_STATUS(&hcan);
+	if((StartTick+90)<HAL_GetTick())
+	{
+		CAN_SEND_STATUS(&hcan);
+		StartTick = HAL_GetTick();
+	}
+
 	CAN_RECEIVED_PACKAGE(&hcan);
 //	HAL_CAN_GetRxMessage(&hcan, CAN_RX_FIFO0, &RxHeader, RxData);
     osDelay(1);

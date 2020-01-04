@@ -53,15 +53,15 @@ void TurnOnLights(void)
 {
 	if(getReverse())
 	{
-		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10|GPIO_PIN_9,0);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,1);
+		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10|GPIO_PIN_8,0);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9,1);
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15,1);
 		direction = true;
 	}
 	else
 	{
-		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10|GPIO_PIN_9,1);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,0);
+		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_10|GPIO_PIN_8,1);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9,0);
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15,0);
 		direction = false;
 	}
@@ -78,7 +78,9 @@ void CheckLightDirection(void)
 	bool val = getReverse();
 	if(direction != val)
 	{
-		HAL_GPIO_TogglePin(GPIOA,Lights_Pins_PORTA);
+		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
+		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_9);
+		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_10);
 		HAL_GPIO_TogglePin(GPIOB,Lights_Pins_PORTB);
 		direction = val;
 	}

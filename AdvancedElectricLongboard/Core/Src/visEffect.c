@@ -56,7 +56,7 @@ uint32_t Wheel(uint8_t WheelPos) {
 
 void visThrottle(uint8_t *frameBuffer, uint32_t frameBufferSize)
 {
-	int32_t throttle_val = testthrottle*100;//getThrottle()*100;
+	int32_t throttle_val = getThrottle()*100;
 	uint8_t i,nLeds = 0;
 	if(throttle_val > 0)
 	{
@@ -204,7 +204,7 @@ void visWhite(uint8_t *frameBuffer, uint32_t frameBufferSize, uint8_t maxBirghtn
 
 	}
 }
-void visBatteryStatus(uint8_t *frameBuffer, uint32_t frameBufferSize)
+void visBatteryStatus(uint8_t *frameBuffer, uint32_t frameBufferSize, uint8_t MaxBrightness)
 {
 	uint32_t batSoC = CheckStateOfCharge();
 	uint32_t i;
@@ -212,13 +212,13 @@ void visBatteryStatus(uint8_t *frameBuffer, uint32_t frameBufferSize)
 	{
 
 		frameBuffer[i*3 + 0] = 0;
-		frameBuffer[i*3 + 1] = 255;
+		frameBuffer[i*3 + 1] = MaxBrightness;
 		frameBuffer[i*3 + 2] = 0;
 
 	}
 	for( i = batSoC; i < ((frameBufferSize) / 3); i++)
 	{
-		frameBuffer[i*3 + 0] = 100;
+		frameBuffer[i*3 + 0] = MaxBrightness/2;
 		frameBuffer[i*3 + 1] = 0;
 		frameBuffer[i*3 + 2] = 0;
 	}
@@ -322,8 +322,8 @@ void visHandle(uint8_t visMode, uint8_t visMaxBrightness)
 			{
 				case 0:		//Animation:
 				{
-					visBatteryStatus(frameBuffer,sizeof(frameBuffer));
-					visBatteryStatus(frameBuffer2,sizeof(frameBuffer2));
+					visBatteryStatus(frameBuffer,sizeof(frameBuffer),visMaxBrightness);
+					visBatteryStatus(frameBuffer2,sizeof(frameBuffer2),visMaxBrightness);
 					break;
 				}
 				case 1:		//Animation:
@@ -370,7 +370,7 @@ void visHandle(uint8_t visMode, uint8_t visMaxBrightness)
 
 uint8_t CheckStateOfCharge(void)
 {
-	uint32_t BatteryVoltage = testbat;//getBatteryVoltage()/NumberOfBatteries;
+	uint32_t BatteryVoltage = getBatteryVoltage()/NumberOfBatteries;
 	if(BatteryVoltage <= 4200 && BatteryVoltage > 4000)	return 28;
 	if(BatteryVoltage <= 4000 && BatteryVoltage >= 3720)return 27;
 	if(BatteryVoltage < 3720 && BatteryVoltage > 3210)				//linearer Bereich der Entladekurve

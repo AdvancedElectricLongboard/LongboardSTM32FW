@@ -444,7 +444,7 @@ void StartCAN(void *argument)
   for(;;)
   {
 	  //HAL_CAN_RxFifo0MsgPendingCallback()
-	if((StartTick+90)<HAL_GetTick())
+	if((StartTick+40)<HAL_GetTick())
 	{
 		CAN_SEND_STATUS(&hcan);
 		StartTick = HAL_GetTick();
@@ -471,11 +471,13 @@ void StartLEDStrips(void *argument)
 
 //init ledButton
   bool ledButtonFlag, PressFlag = 0;
+  static bool LightsOn = false;
   static uint8_t visMode = 0; 				//visMode = 0-4 defines the active animation
   static uint8_t visMaxBirghtness = 255;	//defines the max brightness of the animation
   static uint16_t buttonCnt,TimCnt,testCNT = 0;			//counts the time the button is being pressed
   for(;;)
   {
+	if(LightsOn)CheckLightDirection();
 	ledButtonFlag = HAL_GPIO_ReadPin(GPIOA, Button_Pin);
 	visHandle(visMode, visMaxBirghtness);
     osDelay(10);
@@ -490,12 +492,16 @@ void StartLEDStrips(void *argument)
     	{
     			if(visMode == 4) visMode = 0;
     			else visMode++;
+    			TurnOffLights();
+    			LightsOn = false;
     	}
     	ledButtonFlag = 0;		//reset ledButtonFlag at falling edge
     	buttonCnt = 0;
     }
     if(buttonCnt >= 100)
     {
+    	TurnOnLights();
+    	LightsOn = true;
     	uint8_t i;
     	for(i=0;i<7;i++)
     	{

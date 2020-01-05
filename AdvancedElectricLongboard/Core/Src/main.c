@@ -397,7 +397,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : PB8 PB9 */
   GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
@@ -614,14 +614,14 @@ void StartDMS(void *argument)
 void StartBatteryOverLoadProtection(void *argument)
 {
   /* USER CODE BEGIN StartBatteryOverLoadProtection */
-	int Current=0;
-	int Voltage=0;
+	int32_t Current=0;
+	int32_t Voltage=0;
   /* Infinite loop */
   for(;;)
   {
 	  Current=getBrakeCurrent();
 	  Voltage=getBatteryVoltage();
-	  if(Current>0&&Voltage>40800){
+	  if(Current<0&&Voltage>40800){
 		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
 		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_SET);
 	  }

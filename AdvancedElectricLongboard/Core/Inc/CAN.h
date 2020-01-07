@@ -91,6 +91,8 @@ int32_t getBrakeCurrent();
 
 int32_t getBrakeCurrentRel();
 
+int32_t getRPM();
+
 int32_t CAN_SEND_STATUS(CAN_HandleTypeDef *hcan);
 
 int32_t CAN_SEND_BRAKE_CURRENT(CAN_HandleTypeDef *hcan,float bcurrent); //A

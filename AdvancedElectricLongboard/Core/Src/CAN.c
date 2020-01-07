@@ -36,6 +36,7 @@ static uint32_t voltage = 0;
 static int32_t throttle = 0;
 static int32_t brakeCurrent = 0;
 static int32_t brakeCurrentRel = 0;
+static int32_t RPM = 0;
 
 static const uint32_t FAKE_RPM = 0xAABBCCDD;//8000; //[1]
 static const uint16_t FAKE_CURRENT = 10000; //mA
@@ -95,6 +96,16 @@ int32_t getThrottle()
 	return throttle;
 }
 
+void setRPM(int32_t rpm)
+{
+	RPM = rpm;
+}
+
+int32_t getRPM()
+{
+	return RPM;
+}
+
 void setBrakeCurrent(int32_t val)	//mA
 {
 	brakeCurrent = val;
@@ -112,7 +123,7 @@ void setBrakeCurrentRel(int32_t val)	//mA
 
 int32_t getBrakeCurrentRel()
 {
-	return brakeCurrentRel;
+	return -60000;
 }
 
 
@@ -208,6 +219,10 @@ bool CAN_RECEIVED_PACKAGE(CAN_HandleTypeDef *hcan)	//in Ampere
 				break;
 			case CAN_PACKET_STATUS_5:
 				id = (RxData[7]<<8) | (RxData[6]);
+				break;
+			case CAN_PACKET_SET_RPM:
+				index = 0;
+				setRPM(buffer_get_int32(RxData,&index));
 				break;
 		}
 		return true;

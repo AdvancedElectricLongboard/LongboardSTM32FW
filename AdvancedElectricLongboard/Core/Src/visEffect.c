@@ -53,8 +53,8 @@ uint32_t Wheel(uint8_t WheelPos) {
 void visRPM(uint8_t *framebuffer, uint32_t frameBufferSize)
 {
 	int32_t RPM_val = getRPM()*1000;
-	uint32_t maxRPM = getBatteryVoltage()*100;
-	uint16_t step = maxRPM/28;
+	uint32_t maxRPM = getBatteryVoltage()*190;
+	uint32_t step = maxRPM/28;
 	uint8_t i,nLeds = 0;
 	if(RPM_val > 0)
 	{

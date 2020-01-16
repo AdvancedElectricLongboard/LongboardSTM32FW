@@ -470,11 +470,11 @@ void StartLEDStrips(void *argument)
   /* Infinite loop */
 
 //init ledButton
-  bool ledButtonFlag, PressFlag = 0;
-  static bool LightsOn = false;
-  static uint8_t visMode = 0; 				//visMode = 0-4 defines the active animation
-  static uint8_t visMaxBirghtness = 255;	//defines the max brightness of the animation
-  static uint16_t buttonCnt,TimCnt,testCNT = 0;			//counts the time the button is being pressed
+  bool ledButtonFlag = 0;
+  static bool LightsOn, PressedFlag = false;
+  static uint8_t visMode, ButtonPressCnt, WaitCnt = 0; 				//visMode = 0-4 defines the active animation
+  static uint8_t visMaxBirghtness = 255;							//defines the max brightness of the animation
+  static uint16_t buttonCnt = 0;			//counts the time the button is being pressed
   for(;;)
   {
 	if(LightsOn)CheckLightDirection();
@@ -490,18 +490,19 @@ void StartLEDStrips(void *argument)
     {
     	if(buttonCnt > 5 && buttonCnt < 100)
     	{
-    			if(visMode == 4) visMode = 0;
-    			else visMode++;
-    			TurnOffLights();
-    			LightsOn = false;
+			ButtonPressCnt++;
+			PressedFlag = 1;
+			WaitCnt = 0;
     	}
     	ledButtonFlag = 0;		//reset ledButtonFlag at falling edge
     	buttonCnt = 0;
     }
+
+
+
     if(buttonCnt >= 100)
     {
-    	TurnOnLights();
-    	LightsOn = true;
+    	PressedFlag = ButtonPressCnt = WaitCnt = 0;
     	uint8_t i;
     	for(i=0;i<7;i++)
     	{
@@ -517,15 +518,45 @@ void StartLEDStrips(void *argument)
     		}
     	}
     }
-    if(testCNT==20)
+
+    if(PressedFlag && buttonCnt == 0)
     {
-    	if(testbat <=2700) testbat=4200;
-    	else testbat-=10;
-    	if(testthrottle<=-100) testthrottle=100;
-    	else    	testthrottle--;
-    	testCNT=0;
+    	WaitCnt++;
+    	if(WaitCnt == 99)
+    	{
+    		switch (ButtonPressCnt)
+    		{
+				case 1:
+				{
+		    		if(visMode == 4) visMode = 0;
+		    		else visMode++;
+					break;
+				}
+				case 2:
+				{
+					if(LightsOn)
+					{
+						LightsOn = false;
+						TurnOffLights();
+					}
+					else
+					{
+						LightsOn = true;
+						TurnOnLights();
+					}
+					break;
+				}
+				case 3:
+				{
+					visMode = 4;
+					break;
+				}
+
+    		}
+    		PressedFlag = ButtonPressCnt = WaitCnt = 0;
+    	}
     }
-    testCNT++;
+
 //	if(buttonCnt > 100 && buttonCnt < 200) visMaxBirghtness = 255;
 //	if(buttonCnt > 200 && buttonCnt < 300) visMaxBirghtness = 204;
 //	if(buttonCnt > 300 && buttonCnt < 400) visMaxBirghtness = 153;

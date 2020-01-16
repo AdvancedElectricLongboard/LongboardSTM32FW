@@ -30,9 +30,6 @@ uint8_t frameBuffer2[3*WS2812B_NUMBER_OF_LEDS];
 
 // defines
 
-//test
-extern int32_t testthrottle;
-extern uint32_t testbat;
 
 // Helper defines
 #define newColor(r, g, b) (((uint32_t)(r) << 16) | ((uint32_t)(g) <<  8) | (b))
@@ -53,7 +50,67 @@ uint32_t Wheel(uint8_t WheelPos) {
   WheelPos -= 170;
   return newColor(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
+void visRPM(uint8_t *framebuffer, uint32_t frameBufferSize)
+{
+	int32_t RPM_val = getRPM()*1000;
+	uint32_t maxRPM = getBatteryVoltage()*190;
+	uint32_t step = maxRPM/28;
+	uint8_t i,nLeds = 0;
+	if(RPM_val > 0)
+	{
+		for(i = 0;i < 28;i++)
+		{
+			if(RPM_val <= ((i+1)*step) && RPM_val >= (i*step))
+			{
+				nLeds = i+1;
+				break;
+			}
+		}
+		if(nLeds <= 14)
+		{
+			for( i = 0; i < 28; i++)
+			{
+				if(i < nLeds)
+				{
+					frameBuffer[i*3 + 0] = 19*i;
+					frameBuffer[i*3 + 1] = 255;
+				}
+				else
+				{
+					frameBuffer[i*3 + 0] = 0;
+					frameBuffer[i*3 + 1] = 0;
+				}
+				frameBuffer[i*3 + 2] = 0;
+			}
+		}
+		else
+		{
+			for( i = 0; i < 14; i++)
+			{
+				frameBuffer[i*3 + 0] = 19*i;
+				frameBuffer[i*3 + 1] = 255;
+				frameBuffer[i*3 + 2] = 0;
+			}
+			for( i = 14; i < 28; i++)
+			{
+				if(i < nLeds)
+				{
+					frameBuffer[i*3 + 0] = 255;
+					frameBuffer[i*3 + 1] = 252-(i-14)*19;
+				}
+				if(i >= nLeds)
+				{
+					frameBuffer[i*3 + 0] = 0;
+					frameBuffer[i*3 + 1] = 0;
+				}
+				frameBuffer[i*3 + 2] = 0;
+			}
+		}
+	}
 
+
+
+}
 void visThrottle(uint8_t *frameBuffer, uint32_t frameBufferSize)
 {
 	int32_t throttle_val = getThrottle()*100;
@@ -330,14 +387,12 @@ void visHandle(uint8_t visMode, uint8_t visMaxBrightness)
 				{
 					visThrottle(frameBuffer,sizeof(frameBuffer));
 					visThrottle(frameBuffer2,sizeof(frameBuffer2));
-					//visParty(frameBuffer,sizeof(frameBuffer));
-					//visParty(frameBuffer2,sizeof(frameBuffer2));
 					break;
 				}
 				case 2:		//Animation:
 				{
-					visThrottle(frameBuffer,sizeof(frameBuffer));
-					visThrottle(frameBuffer2,sizeof(frameBuffer2));
+					visRPM(frameBuffer,sizeof(frameBuffer));
+					visRPM(frameBuffer2,sizeof(frameBuffer2));
 					break;
 				}
 				case 3:		//Animation:
@@ -348,8 +403,8 @@ void visHandle(uint8_t visMode, uint8_t visMaxBrightness)
 				}
 				case 4:		//Animation:
 				{
-					visRainbow(frameBuffer, sizeof(frameBuffer), 30);
-					visRainbow(frameBuffer2, sizeof(frameBuffer), 30);
+					visRainbow(frameBuffer, sizeof(frameBuffer), 15);
+					visRainbow(frameBuffer2, sizeof(frameBuffer), 15);
 					break;
 				}
 				default:	//Animation: white

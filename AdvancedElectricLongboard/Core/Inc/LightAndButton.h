@@ -16,10 +16,10 @@
 // Button output pin
 #define Button_Pin GPIO_PIN_4
 // Lights output pins port A
-#define Lights_Pins_PORTA (GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10)
+#define Lights_Pins_PORTA (GPIO_PIN_9 | GPIO_PIN_8)
 
 //Lights output pins port B
-#define Lights_Pins_PORTB GPIO_PIN_15
+#define Lights_Pins_PORTB (GPIO_PIN_15 | GPIO_PIN_14)
 
 
 

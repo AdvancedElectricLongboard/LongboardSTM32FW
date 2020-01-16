@@ -611,23 +611,41 @@ void StartDMS(void *argument)
 * @retval None
 */
 /* USER CODE END Header_StartBatteryOverLoadProtection */
+
+bool EstimateRecuperation()
+{
+	volatile int32_t current=0;
+	static int32_t ticks;
+	current=getCurrent();
+
+	if(current>0)
+	{
+		ticks = HAL_GetTick();
+		return false;
+	}
+	else
+	{
+		if((ticks+100)<HAL_GetTick())
+			return true;
+	}
+}
 void StartBatteryOverLoadProtection(void *argument)
 {
   /* USER CODE BEGIN StartBatteryOverLoadProtection */
-	int32_t Current=0;
-	int32_t Voltage=0;
+	volatile int32_t voltage=0;
+	volatile bool recuperation = false;
   /* Infinite loop */
   for(;;)
   {
-	  Current=getBrakeCurrent();
-	  Voltage=getBatteryVoltage();
-	  if(Current<0&&Voltage>40800){
-		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
-		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_SET);
+	  voltage=getBatteryVoltage();
+	  recuperation = EstimateRecuperation();
+	  if(recuperation/*&&Voltage>40800*/){
+//		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
+//		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_SET);
 	  }
 	  else{
-		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
-		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_RESET);
+//		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
+//		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_RESET);
 	  }
 
     osDelay(1);

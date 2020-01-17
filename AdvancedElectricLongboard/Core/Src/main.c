@@ -444,7 +444,7 @@ void StartCAN(void *argument)
   for(;;)
   {
 	  //HAL_CAN_RxFifo0MsgPendingCallback()
-	if((StartTick+40)<HAL_GetTick())
+	if((StartTick+80)<HAL_GetTick())
 	{
 		CAN_SEND_STATUS(&hcan);
 		StartTick = HAL_GetTick();
@@ -647,16 +647,17 @@ bool EstimateRecuperation()
 {
 	volatile int32_t current=0;
 	static int32_t ticks;
-	current=getCurrent();
+	current=getBrakeCurrent();
+	uint32_t rpm = abs(getRPM());
 
-	if(current>0)
+	if(current>=0 || rpm < 100 )
 	{
 		ticks = HAL_GetTick();
 		return false;
 	}
 	else
 	{
-		if((ticks+100)<HAL_GetTick())
+		if((ticks+10)<HAL_GetTick())
 			return true;
 	}
 }
@@ -671,11 +672,11 @@ void StartBatteryOverLoadProtection(void *argument)
 	  voltage=getBatteryVoltage();
 	  recuperation = EstimateRecuperation();
 	  if(recuperation/*&&Voltage>40800*/){
-//		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
 //		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_SET);
 	  }
 	  else{
-//		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
+ 		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
 //		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_RESET);
 	  }
 

@@ -107,7 +107,15 @@ void visRPM(uint8_t *framebuffer, uint32_t frameBufferSize)
 			}
 		}
 	}
-
+	else
+	{
+		for( i = 0; i < 28; i++)
+		{
+			frameBuffer[i*3 + 0] = 0;
+			frameBuffer[i*3 + 1] = 0;
+			frameBuffer[i*3 + 2] = 0;
+		}
+	}
 
 
 }

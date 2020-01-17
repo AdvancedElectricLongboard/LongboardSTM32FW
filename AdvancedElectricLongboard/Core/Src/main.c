@@ -522,7 +522,7 @@ void StartLEDStrips(void *argument)
     if(PressedFlag && buttonCnt == 0)
     {
     	WaitCnt++;
-    	if(WaitCnt == 99)
+    	if(WaitCnt == 50)
     	{
     		switch (ButtonPressCnt)
     		{

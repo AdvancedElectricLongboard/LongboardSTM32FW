@@ -50,7 +50,8 @@ uint32_t Wheel(uint8_t WheelPos) {
   WheelPos -= 170;
   return newColor(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
-void visRPM(uint8_t *framebuffer, uint32_t frameBufferSize)
+
+void visRPM(uint8_t *frameBuffer, uint32_t frameBufferSize)
 {
  	int32_t RPM_val = abs(getRPM()*1000);
 	uint32_t maxRPM = getBatteryVoltage()*190;

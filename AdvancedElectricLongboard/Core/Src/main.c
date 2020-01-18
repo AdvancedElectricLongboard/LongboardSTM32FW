@@ -60,8 +60,9 @@ osThreadId_t LEDStripsHandle;
 osThreadId_t DMSHandle;
 osThreadId_t BatteryOverLoadHandle;
 /* USER CODE BEGIN PV */
-int32_t testthrottle = 100;
-uint32_t testbat=4200;
+
+uint8_t visMode = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -472,7 +473,7 @@ void StartLEDStrips(void *argument)
 //init ledButton
   bool ledButtonFlag = 0;
   static bool LightsOn, PressedFlag = false;
-  static uint8_t visMode, ButtonPressCnt, WaitCnt = 0; 				//visMode = 0-4 defines the active animation
+  static uint8_t ButtonPressCnt, WaitCnt = 0; 				//visMode = 0-4 defines the active animation
   static uint8_t visMaxBirghtness = 255;							//defines the max brightness of the animation
   static uint16_t buttonCnt = 0;			//counts the time the button is being pressed
   for(;;)
@@ -557,14 +558,6 @@ void StartLEDStrips(void *argument)
     	}
     }
 
-//	if(buttonCnt > 100 && buttonCnt < 200) visMaxBirghtness = 255;
-//	if(buttonCnt > 200 && buttonCnt < 300) visMaxBirghtness = 204;
-//	if(buttonCnt > 300 && buttonCnt < 400) visMaxBirghtness = 153;
-//	if(buttonCnt > 400 && buttonCnt < 500) visMaxBirghtness = 102;
-//	if(buttonCnt > 500 && buttonCnt < 600) visMaxBirghtness = 51;
-//	if(buttonCnt > 600 && buttonCnt < 700) visMaxBirghtness = 0;
-//	if(buttonCnt == 700) buttonCnt = 0;
-
   }
   /* USER CODE END StartLEDStrips */
 }
@@ -578,60 +571,65 @@ void StartLEDStrips(void *argument)
 /* USER CODE END Header_StartDMS */
 void StartDMS(void *argument)
 {
-  /* USER CODE BEGIN StartDMS */
-	HAL_ADC_Start(&hadc1);
-	HAL_ADC_Start(&hadc2);
-	bool DMS1_Step=false;
-	bool DMS2_Step=false;
-	bool DMS1_Alert=false;
-	bool DMS2_Alert=false;
-	uint32_t DMS1_timer=0;
-	uint32_t DMS2_timer=0;
-	bool DMS_Break = false;
-	float BrakeCurrent=0;
-  /* Infinite loop */
+	if(visMode == 4)
+	{
+		 /* USER CODE BEGIN StartDMS */
+			HAL_ADC_Start(&hadc1);
+			HAL_ADC_Start(&hadc2);
+			bool DMS1_Step=false;
+			bool DMS2_Step=false;
+			bool DMS1_Alert=false;
+			bool DMS2_Alert=false;
+			uint32_t DMS1_timer=0;
+			uint32_t DMS2_timer=0;
+			bool DMS_Break = false;
+			float BrakeCurrent=0;
+		  /* Infinite loop */
 
-  for(;;)
-  {
-	volatile uint32_t DMS1_Val = ADC_Poll2(&hadc1)&0xfff; //get DMS Voltage
-	volatile uint32_t DMS2_Val = ADC_Poll2(&hadc2)&0xfff;
+		  for(;;)
+		  {
+			volatile uint32_t DMS1_Val = ADC_Poll2(&hadc1)&0xfff; //get DMS Voltage
+			volatile uint32_t DMS2_Val = ADC_Poll2(&hadc2)&0xfff;
 
-	DMS1_Step=Check_Threshhold(DMS1_Val); //Check Value
-	DMS2_Step=Check_Threshhold(DMS2_Val);
+			DMS1_Step=Check_Threshhold(DMS1_Val); //Check Value
+			DMS2_Step=Check_Threshhold(DMS2_Val);
 
 
 
-	if(DMS1_Step==true){ //person on board
-		DMS1_timer=HAL_GetTick(); //get current timer value
-		DMS1_Alert=false;
-	}
-	else{//no person on board
-		uint32_t delta_time=HAL_GetTick();
-		if(DMS1_timer+1000<delta_time){
-			DMS1_Alert=true;
-		}
-	}
-
-	if(DMS2_Step==true){ //person on board
-			DMS2_timer=HAL_GetTick(); //get current timer value
-			DMS2_Alert=false;
-		}
-		else{//no person on board
-			uint32_t delta_time=HAL_GetTick();
-			if(DMS2_timer+1000<delta_time){
-				DMS2_Alert=true;
+			if(DMS1_Step==true){ //person on board
+				DMS1_timer=HAL_GetTick(); //get current timer value
+				DMS1_Alert=false;
 			}
-		}
-	if(DMS1_Alert&DMS2_Alert==true){
-		//DMS_Break=true;
-		BrakeCurrent=(float)getBrakeCurrentRel()/1000;
-		CAN_SEND_BRAKE_CURRENT(&hcan,BrakeCurrent);
+			else{//no person on board
+				uint32_t delta_time=HAL_GetTick();
+				if(DMS1_timer+1000<delta_time){
+					DMS1_Alert=true;
+				}
+			}
+
+			if(DMS2_Step==true){ //person on board
+					DMS2_timer=HAL_GetTick(); //get current timer value
+					DMS2_Alert=false;
+				}
+				else{//no person on board
+					uint32_t delta_time=HAL_GetTick();
+					if(DMS2_timer+1000<delta_time){
+						DMS2_Alert=true;
+					}
+				}
+			if(DMS1_Alert&DMS2_Alert==true){
+				//DMS_Break=true;
+				BrakeCurrent=(float)getBrakeCurrentRel()/1000;
+				CAN_SEND_BRAKE_CURRENT(&hcan,BrakeCurrent);
+			}
+			else{
+				//DMS_Break=false;
+			}
+		    osDelay(1);
+		  }
+
 	}
-	else{
-		//DMS_Break=false;
-	}
-    osDelay(1);
-  }
+
   /* USER CODE END StartDMS */
 }
 

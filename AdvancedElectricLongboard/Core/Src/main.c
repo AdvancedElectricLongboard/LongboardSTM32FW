@@ -265,7 +265,7 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 1 */
 
   /* USER CODE END ADC1_Init 1 */
-  /** Common config 
+  /** Common config
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
@@ -278,7 +278,7 @@ static void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /** Configure Regular Channel 
+  /** Configure Regular Channel
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
@@ -571,30 +571,29 @@ void StartLEDStrips(void *argument)
 /* USER CODE END Header_StartDMS */
 void StartDMS(void *argument)
 {
-	if(visMode == 4)
-	{
-		 /* USER CODE BEGIN StartDMS */
-			HAL_ADC_Start(&hadc1);
-			HAL_ADC_Start(&hadc2);
-			bool DMS1_Step=false;
-			bool DMS2_Step=false;
-			bool DMS1_Alert=false;
-			bool DMS2_Alert=false;
-			uint32_t DMS1_timer=0;
-			uint32_t DMS2_timer=0;
-			bool DMS_Break = false;
-			float BrakeCurrent=0;
-		  /* Infinite loop */
 
-		  for(;;)
-		  {
+	/* USER CODE BEGIN StartDMS */
+	HAL_ADC_Start(&hadc1);
+	HAL_ADC_Start(&hadc2);
+	bool DMS1_Step=false;
+	bool DMS2_Step=false;
+	bool DMS1_Alert=false;
+	bool DMS2_Alert=false;
+	uint32_t DMS1_timer=0;
+	uint32_t DMS2_timer=0;
+	bool DMS_Break = false;
+	float BrakeCurrent=0;
+	/* Infinite loop */
+
+	for(;;)
+	{
+		if(visMode == 4)
+		{
 			volatile uint32_t DMS1_Val = ADC_Poll2(&hadc1)&0xfff; //get DMS Voltage
 			volatile uint32_t DMS2_Val = ADC_Poll2(&hadc2)&0xfff;
 
 			DMS1_Step=Check_Threshhold(DMS1_Val); //Check Value
 			DMS2_Step=Check_Threshhold(DMS2_Val);
-
-
 
 			if(DMS1_Step==true){ //person on board
 				DMS1_timer=HAL_GetTick(); //get current timer value
@@ -602,7 +601,7 @@ void StartDMS(void *argument)
 			}
 			else{//no person on board
 				uint32_t delta_time=HAL_GetTick();
-				if(DMS1_timer+1000<delta_time){
+				if(DMS1_timer+100<delta_time){
 					DMS1_Alert=true;
 				}
 			}
@@ -617,17 +616,19 @@ void StartDMS(void *argument)
 						DMS2_Alert=true;
 					}
 				}
-			if(DMS1_Alert&DMS2_Alert==true){
-				//DMS_Break=true;
+			if(DMS1_Alert&&DMS2_Alert==true){
+				DMS_Break=true;
 				BrakeCurrent=(float)getBrakeCurrentRel()/1000;
 				CAN_SEND_BRAKE_CURRENT(&hcan,BrakeCurrent);
 			}
 			else{
-				//DMS_Break=false;
+				DMS_Break=false;
+				CAN_SEND_BRAKE_CURRENT(&hcan,0);
 			}
 		    osDelay(1);
 		  }
-
+		else
+			CAN_SEND_BRAKE_CURRENT(&hcan,0);
 	}
 
   /* USER CODE END StartDMS */
@@ -669,13 +670,14 @@ void StartBatteryOverLoadProtection(void *argument)
   {
 	  voltage=getBatteryVoltage();
 	  recuperation = EstimateRecuperation();
-	  if(recuperation/*&&Voltage>40800*/){
+	  if(recuperation&&voltage>40800)
+	  {
 		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
-//		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_SET);
+		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_SET);
 	  }
 	  else{
  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
-//		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_RESET);
 	  }
 
     osDelay(1);

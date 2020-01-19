@@ -89,7 +89,10 @@ bool getReverse()
 
 void setBrakeCurrent(int32_t val)	//mA
 {
-	brakeCurrent = val;
+	if(val<0)
+		brakeCurrent = val;
+	else
+		brakeCurrent = 0;
 }
 
 int32_t getBrakeCurrent()
@@ -112,8 +115,6 @@ int32_t getCurrent()
 void setThrottle(int32_t val)	//Percentage
 {
 	throttle = val;
-	if(val > 0)
-		setBrakeCurrent(0);
 }
 
 int32_t getThrottle()
@@ -179,7 +180,8 @@ int32_t CAN_SEND_BRAKE_CURRENT(CAN_HandleTypeDef *hcan,float bcurrent)	//in Ampe
 	if(HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0)
 		return 0;
 
-	TxHeader.ExtId &= ((TxHeader.ExtId&0xFF)|(CAN_PACKET_SET_CURRENT_BRAKE<<8));
+	TxHeader.ExtId = ((TxHeader.ExtId&0xFF)|(CAN_PACKET_SET_CURRENT_BRAKE<<8));
+	TxHeader.StdId = ((TxHeader.StdId&0xFF)|((CAN_PACKET_SET_CURRENT_BRAKE)<<8));
 
 	int32_t send_index = 0;
 	buffer_append_int32(TxData,(int32_t)(bcurrent * 1000),&send_index);

@@ -221,9 +221,9 @@ void visRainbow(uint8_t *frameBuffer, uint32_t frameBufferSize, uint32_t effectL
 
 void visWhiteWithLights(uint8_t *frameBuffer, uint32_t frameBufferSize, uint8_t visMaxBrightness)
 {
-
+	bool inv_reverse = !getReverse();
 	uint32_t i;
-	if(!getReverse())
+	if(!inv_reverse)
 	{
 		for( i = 0; i < 4; i++)
 		{

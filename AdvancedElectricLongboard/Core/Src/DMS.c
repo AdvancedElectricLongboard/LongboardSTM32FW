@@ -7,7 +7,7 @@ extern "C" {
 #include "DMS.h"
 #include "stdbool.h"
 
-uint32_t threshhold = 3000;
+uint32_t threshhold = 1500;
 
 uint32_t ADC_Poll2(ADC_HandleTypeDef *hadc)
 {

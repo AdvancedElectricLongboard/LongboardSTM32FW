@@ -582,6 +582,7 @@ void StartDMS(void *argument)
 	uint32_t DMS1_timer=0;
 	uint32_t DMS2_timer=0;
 	bool DMS_Break = false;
+	bool brake_Status = false;
 	float BrakeCurrent=0;
 	/* Infinite loop */
 
@@ -628,7 +629,13 @@ void StartDMS(void *argument)
 		    osDelay(1);
 		  }
 		else
-			CAN_SEND_BRAKE_CURRENT(&hcan,0);
+			DMS_Break=false;
+
+		if(DMS_Break != brake_Status)
+		{
+			CAN_SEND_BRAKE_CURRENT(&hcan,DMS_Break*(-50));
+			brake_Status = DMS_Break;
+		}
 	}
 
   /* USER CODE END StartDMS */

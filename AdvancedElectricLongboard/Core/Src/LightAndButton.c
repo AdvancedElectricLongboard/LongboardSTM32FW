@@ -6,6 +6,10 @@
  */
 
 #include "LightAndButton.h"
+#include "CAN.h"
+
+struct BoardLight Head = {GPIOB,14,15,false,false,AllOn,AllOff,RedOn,WhiteOn};
+struct BoardLight Tail = {GPIOA,8,9,false,false,AllOn,AllOff,RedOn,WhiteOn};
 
 void Button_Init(void)
 {
@@ -46,38 +50,68 @@ void Lights_Init(void)
 	  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
 	  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
 
+void AllOn(struct BoardLight Light)
+{
+	HAL_GPIO_WritePin(Light.Port, Light.Red_Pin,0);	//negativ logic
+	HAL_GPIO_WritePin(Light.Port, Light.White_Pin,0);
+	Light.RedState = true;
+	Light.WhiteState = true;
+}
+
+void AllOff(struct BoardLight Light)
+{
+	HAL_GPIO_WritePin(Light.Port, Light.Red_Pin,1);	//negativ logic
+	HAL_GPIO_WritePin(Light.Port, Light.White_Pin,1);
+	Light.RedState = false;
+	Light.WhiteState = false;
+}
+
+void RedOn(struct BoardLight Light)
+{
+	HAL_GPIO_WritePin(Light.Port, Light.Red_Pin,0);	//negativ logic
+	HAL_GPIO_WritePin(Light.Port, Light.White_Pin,1);
+	Light.RedState = true;
+	Light.WhiteState = false;
+}
+
+void WhiteOn(struct BoardLight Light)
+{
+	HAL_GPIO_WritePin(Light.Port, Light.Red_Pin,1);	//negativ logic
+	HAL_GPIO_WritePin(Light.Port, Light.White_Pin,0);
+	Light.RedState = false;
+	Light.WhiteState = true;
+}
+
+void CheckDirection(void)
+{
+	if(getReverse())
+		direction = reverse;
+	else
+		direction = forward;
 }
 
 void TurnOnLights(void)
 {
-	if(getReverse())
+	if(direction == reverse)
 	{
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,0);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9,1);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14,0);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15,1);
-		direction = true;
+		Head.RedOn(Head);		//Tail
+		Tail.WhiteOn(Tail);
 	}
 	else
 	{
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,1);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9,0);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14,1);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15,0);
-		direction = false;
+		Head.WhiteOn(Head);		//Tail
+		Tail.RedOn(Tail);
 	}
 }
 void TurnOffLights(void)
 {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,0);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9,0);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14,0);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15,0);
-	direction = false;
+	Tail.AllOff(Tail);
+	Head.AllOff(Head);
 }
 
-void CheckLightDirection(void)
+void UpdateLights(void)
 {
 	bool val = getReverse();
 	if(direction != val)
@@ -89,4 +123,22 @@ void CheckLightDirection(void)
 		direction = val;
 	}
 
+}
+
+void CheckflashBrakelight()
+{
+	if(direction == forward)
+		BrakeLight = Tail;
+	else
+		BrakeLight = Head;
+
+	if(getThrottle()<-5)
+	{
+		BrakeLight.AllOff(BrakeLight);
+		flashTimer = HAL_GetTick();
+		if(flashTimer+10 < HAL_GetTick())
+			BrakeLight.RedOn(BrakeLight);
+	}
+	else
+		BrakeLight.RedOn(BrakeLight);
 }

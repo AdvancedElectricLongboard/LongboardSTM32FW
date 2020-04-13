@@ -478,7 +478,11 @@ void StartLEDStrips(void *argument)
   static uint16_t buttonCnt = 0;			//counts the time the button is being pressed
   for(;;)
   {
-	if(LightsOn)CheckLightDirection();
+	if(LightsOn)
+		UpdateLights();
+	CheckDirection();
+	CheckflashBrakelight();
+
 	ledButtonFlag = HAL_GPIO_ReadPin(GPIOA, Button_Pin);
 	visHandle(visMode, visMaxBirghtness);
     osDelay(10);
@@ -666,7 +670,9 @@ bool EstimateRecuperation()
 		if((ticks+10)<HAL_GetTick())
 			return true;
 	}
+	return false;
 }
+
 void StartBatteryOverLoadProtection(void *argument)
 {
   /* USER CODE BEGIN StartBatteryOverLoadProtection */
